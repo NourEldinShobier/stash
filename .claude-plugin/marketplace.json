@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "stash",
+  "description": "Keep large outputs out of Claude Code's context.",
+  "owner": { "name": "Nour Eldin Shobier", "url": "https://github.com/NourEldinShobier" },
+  "plugins": [
+    { "name": "stash", "description": "MCP server that keeps big command output, files and web pages in a local SQLite search index and returns only what Claude asks for, ranked by Jev.", "source": "./", "category": "productivity" }
+  ]
+}
