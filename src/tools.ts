@@ -98,7 +98,10 @@ async function searchBlocks(store: Store, queries: string[], limit: number, sour
   const blocks: string[] = [];
   queries.forEach((q, i) => {
     const hits = ranked[i]!;
-    blocks.push(`### "${q}" — ${hits.length ? `${hits.length} hit(s)` : 'no matches'}`);
+    const total = store.matches(q, sources);
+    // Say when more matched than are shown, so a missing answer is never mistaken for "not there".
+    const more = total > hits.length ? ` of ${total} matching chunks, best first. For the rest: raise \`limit\`, narrow the query, or stash_get the source` : '';
+    blocks.push(`### "${q}" — ${hits.length ? `${hits.length} hit(s)${more}` : 'no matches'}`);
     for (const h of hits) {
       blocks.push(seen.has(h.id) ? `--- c${h.id} (shown above)` : formatHit(h));
       seen.add(h.id);

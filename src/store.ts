@@ -142,6 +142,21 @@ export class Store {
     }
   }
 
+  /** How many chunks match, so a reply can say when it shows only some of them. -1 when the FTS query fails. */
+  matches(query: string, sources?: string[]): number {
+    const q = ftsQuery(query);
+    if (!q) return 0;
+    const scope = sources ? ` AND s.id IN (${sources.map(() => '?').join(',') || "''"})` : '';
+    try {
+      const row = this.db
+        .query(`SELECT count(*) AS n FROM fts JOIN chunks c ON c.id = fts.rowid JOIN sources s ON s.id = c.source_id WHERE fts MATCH ? AND s.project = ?${scope}`)
+        .get(q, this.project, ...(sources ?? [])) as { n: number };
+      return row.n;
+    } catch {
+      return -1;
+    }
+  }
+
   source(id: string): Source | null {
     return this.db.query('SELECT id, label, kind, bytes, content FROM sources WHERE id = ?').get(id) as Source | null;
   }

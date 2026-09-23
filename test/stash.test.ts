@@ -62,6 +62,19 @@ describe('search', () => {
     expect(other.search('build error', 5)).toEqual([]);
   });
 
+  test('a reply that shows only some matches says how many there are', async () => {
+    delete process.env.TYPESAFE_API_KEY; // BM25 order, offline
+    const { tools } = await import('../src/tools');
+    const s = newStore();
+    s.add('errors', 'text', Array.from({ length: 400 }, (_, i) => `error E${i}: request ${i} failed with status 500`).join('\n'), false);
+    expect(s.matches('request failed status 500')).toBeGreaterThan(3);
+    const search = tools(s).find((t) => t.name === 'stash_search')!;
+    const out = await search.handler({ queries: ['request failed status 500'], limit: 3 });
+    expect(out).toMatch(/3 hit\(s\) of \d+ matching chunks/);
+    const one = await search.handler({ queries: ['request failed status 500'], limit: 50 });
+    expect(one).not.toMatch(/matching chunks, best first/);
+  });
+
   test('odd syntax does not throw', () => {
     const s = newStore();
     s.add('x', 'text', 'NEAR AND OR "quote" col:val', false);

@@ -25,7 +25,7 @@ export async function handle(store: Store, msg: Message): Promise<unknown | null
       return ok({
         protocolVersion: typeof params.protocolVersion === 'string' ? params.protocolVersion : '2025-06-18',
         capabilities: { tools: {} },
-        serverInfo: { name: 'stash', version: '0.1.0' },
+        serverInfo: { name: 'stash', version: '0.2.0' },
         instructions: INSTRUCTIONS,
       });
     case 'ping':
