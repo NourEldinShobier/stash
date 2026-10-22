@@ -23,7 +23,6 @@ Done. Claude sees six new `stash_*` tools.
 |---|---|---|
 | [Bun](https://bun.sh) | Yes | `curl -fsSL https://bun.sh/install \| bash` (Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"`) |
 | `TYPESAFE_API_KEY` | Optional | [Jev](https://typesafe.ai) reranks search results |
-| `JINA_API_KEY` | Optional | Cleaner web pages in `stash_index` ([free key](https://jina.ai/?sui=apikey)) |
 
 ## What it does
 
@@ -56,7 +55,7 @@ Done. Claude sees six new `stash_*` tools.
 
 - Each project gets its own index, keyed by the folder Claude Code runs in.
 - Sources older than 7 days are pruned.
-- Nothing leaves your machine except Jev reranking and Jina page loading, and only when those keys are set.
+- Nothing leaves your machine except Jev reranking, and only when `TYPESAFE_API_KEY` is set.
 
 ## Remove it
 

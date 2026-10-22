@@ -1,6 +1,6 @@
 {
   "name": "stash",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server that keeps big command output, files and web pages in a local SQLite search index and returns only what Claude asks for, ranked by Jev.",
   "author": { "name": "Nour Eldin Shobier", "url": "https://github.com/NourEldinShobier" },
   "repository": "https://github.com/NourEldinShobier/stash",

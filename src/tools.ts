@@ -153,25 +153,6 @@ export function htmlToText(html: string): string {
 }
 
 async function fetchUrl(url: string): Promise<string> {
-  const key = process.env.JINA_API_KEY;
-  if (key) {
-    const res = await fetch('https://r.jina.ai/', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'X-Retain-Images': 'none',
-        'X-Retain-Links': 'text',
-      },
-      body: JSON.stringify({ url }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!res.ok) throw new Error(`Jina HTTP ${res.status}`);
-    const content = ((await res.json()) as { data?: { content?: string } }).data?.content;
-    if (typeof content !== 'string') throw new Error('Jina returned no content');
-    return content;
-  }
   const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const body = await res.text();
