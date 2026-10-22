@@ -1,5 +1,5 @@
 /**
- * stash: an MCP server (stdio, newline-delimited JSON-RPC 2.0) that keeps big command outputs, files
+ * stash: an MCP server (stdio, newline-delimited JSON-RPC 2.0) that keeps big command outputs and files
  * out of the agent's context. Stdout carries protocol messages only; logs go to stderr.
  */
 import { Store, bytes } from './store';
