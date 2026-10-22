@@ -3,14 +3,11 @@ import { readFileSync } from 'node:fs';
 import { extname, resolve } from 'node:path';
 import { runCode, runShell, type Language } from './exec';
 import { bytes, type Hit, type Store } from './store';
-import { ask, jevKey, noul, type Question } from './jev';
 
 /** ~3,000 tokens at chars/4. */
 export const BUDGET = 12_000;
 const CODE_CAP = 4_000;
 const HIT_CAP = 2_000;
-const RERANK_POOL = 15;
-const JEV_BATCH = 40;
 
 const n = (x: number) => x.toLocaleString('en-US');
 
@@ -48,52 +45,8 @@ function formatHit(h: Hit): string {
   return `${where}\n${text}`;
 }
 
-// ---- TypeSafe Jev rerank ----
-
-async function jevScores(query: string, hits: Hit[]): Promise<number[]> {
-  const scores: number[] = [];
-  for (let i = 0; i < hits.length; i += JEV_BATCH) {
-    const batch = hits.slice(i, i + JEV_BATCH);
-    const questions: Record<string, Question> = Object.fromEntries(
-      batch.map((_, j) => [
-        `p${j}`,
-        {
-          type: 'noul',
-          instructions: `Does \`passages[${j}]\` contain information that helps answer \`query\`?`,
-          criteria: {
-            true: 'The passage states facts, code, errors or steps directly relevant to the query',
-            false: 'The passage is unrelated or only shares words with the query',
-          },
-        },
-      ]),
-    );
-    const state = { query, passages: batch.map((h) => ({ id: `c${h.id}`, heading: h.heading, text: h.text.slice(0, 1500) })) };
-    const answers = await ask(state, questions, AbortSignal.timeout(8_000));
-    batch.forEach((_, j) => scores.push(noul(answers[`p${j}`])));
-  }
-  return scores;
-}
-
-/** Keeps hits Jev rates close to the best one; any failure falls back to BM25 order. */
-export async function rerank(query: string, hits: Hit[]): Promise<Hit[]> {
-  if (!jevKey() || hits.length < 2) return hits;
-  try {
-    const scores = await jevScores(query, hits);
-    const floor = Math.max(0.3, 0.5 * Math.max(...scores));
-    return hits
-      .map((h, i) => ({ h, s: scores[i]! }))
-      .filter((x) => x.s >= floor)
-      .sort((a, b) => b.s - a.s)
-      .map((x) => x.h);
-  } catch (e) {
-    process.stderr.write(`stash: Jev rerank failed (${(e as Error).message}), keeping BM25 order\n`);
-    return hits;
-  }
-}
-
-async function searchBlocks(store: Store, queries: string[], limit: number, sources?: string[]): Promise<string[]> {
-  const pool = jevKey() ? Math.max(limit, RERANK_POOL) : limit;
-  const ranked = await Promise.all(queries.map(async (q) => (await rerank(q, store.search(q, pool, sources))).slice(0, limit)));
+function searchBlocks(store: Store, queries: string[], limit: number, sources?: string[]): string[] {
+  const ranked = queries.map((q) => store.search(q, limit, sources));
   const seen = new Set<number>();
   const blocks: string[] = [];
   queries.forEach((q, i) => {
@@ -131,33 +84,6 @@ const strings = (a: Args, k: string): string[] | undefined => {
   if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) throw new Error(`\`${k}\` must be an array of strings`);
   return v as string[];
 };
-
-// ---- URL fetching ----
-
-export function htmlToText(html: string): string {
-  return html
-    .replace(/<(script|style|noscript|svg|head)\b[\s\S]*?<\/\1>/gi, '')
-    .replace(/<h([1-3])\b[^>]*>/gi, (_, l: string) => `\n\n${'#'.repeat(Number(l))} `)
-    .replace(/<\/h[1-6]>|<\/p>|<br\s*\/?>|<\/div>|<\/tr>|<\/li>/gi, '\n')
-    .replace(/<li\b[^>]*>/gi, '- ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-async function fetchUrl(url: string): Promise<string> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  const body = await res.text();
-  return /html/i.test(res.headers.get('content-type') ?? '') ? htmlToText(body) : body;
-}
 
 // ---- tools ----
 
@@ -235,14 +161,14 @@ export function tools(store: Store): Tool[] {
     {
       name: 'stash_index',
       description:
-        'Store and index a text file (`path`), a web page (`url`) or text you already have (`text` + `label`) without reading it into context. Returns the source id, size and headings; then use stash_search or stash_get.',
+        'Store and index a text file (`path`) or text you already have (`text` + `label`) without reading it into context. Returns the source id, size and headings; then use stash_search or stash_get.',
       inputSchema: {
         type: 'object',
-        properties: { path: { type: 'string' }, url: { type: 'string' }, text: { type: 'string' }, label: { type: 'string' } },
+        properties: { path: { type: 'string' }, text: { type: 'string' }, label: { type: 'string' } },
       },
       handler: async (a) => {
-        const given = ['path', 'url', 'text'].filter((k) => a[k] !== undefined);
-        if (given.length !== 1) throw new Error('pass exactly one of `path`, `url` or `text`');
+        const given = ['path', 'text'].filter((k) => a[k] !== undefined);
+        if (given.length !== 1) throw new Error('pass exactly one of `path` or `text`');
         let content: string;
         let label: string;
         let kind: string;
@@ -254,11 +180,6 @@ export function tools(store: Store): Tool[] {
           content = buf.toString('utf8');
           kind = 'file';
           markdown = ['.md', '.mdx', '.markdown'].includes(extname(label).toLowerCase());
-        } else if (a.url !== undefined) {
-          label = str(a, 'url')!;
-          if (!/^https?:\/\//i.test(label)) throw new Error('`url` must be http(s)');
-          content = await fetchUrl(label);
-          kind = 'url';
         } else {
           content = str(a, 'text')!;
           label = str(a, 'label', false) || 'text';
@@ -275,7 +196,7 @@ export function tools(store: Store): Tool[] {
     {
       name: 'stash_search',
       description:
-        'Full-text search over everything stashed in this project (command outputs, files, pages). Pass all your questions at once in `queries`; returns the matching passages with ids and line ranges.',
+        'Full-text search over everything stashed in this project (command outputs, files, text). Pass all your questions at once in `queries`; returns the matching passages with ids and line ranges.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -291,7 +212,7 @@ export function tools(store: Store): Tool[] {
         const ref = str(a, 'source', false);
         const sources = ref ? store.resolve(ref) : undefined;
         if (ref && !sources!.length) return `No source "${ref}" in this project.`;
-        const blocks = await searchBlocks(store, queries, Math.max(1, Math.floor(num(a, 'limit', 5))), sources);
+        const blocks = searchBlocks(store, queries, Math.max(1, Math.floor(num(a, 'limit', 5))), sources);
         return assemble(blocks, BUDGET, 'narrow the query, lower `limit`, or stash_get a chunk id');
       },
     },

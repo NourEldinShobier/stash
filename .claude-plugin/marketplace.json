@@ -4,6 +4,6 @@
   "description": "Keep large outputs out of Claude Code's context.",
   "owner": { "name": "Nour Eldin Shobier", "url": "https://github.com/NourEldinShobier" },
   "plugins": [
-    { "name": "stash", "description": "MCP server that keeps big command output, files and web pages in a local SQLite search index and returns only what Claude asks for, ranked by Jev.", "source": "./", "category": "productivity" }
+    { "name": "stash", "description": "MCP server that keeps big command output and files in a local SQLite search index and returns only what Claude asks for.", "source": "./", "category": "productivity" }
   ]
 }

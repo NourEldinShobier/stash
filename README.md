@@ -22,11 +22,10 @@ Done. Claude sees six new `stash_*` tools.
 | What | Required? | Get it |
 |---|---|---|
 | [Bun](https://bun.sh) | Yes | `curl -fsSL https://bun.sh/install \| bash` (Windows: `powershell -c "irm bun.sh/install.ps1 \| iex"`) |
-| `TYPESAFE_API_KEY` | Optional | [Jev](https://typesafe.ai) reranks search results |
 
 ## What it does
 
-1. Claude runs a command, a code snippet, a file or a URL through stash.
+1. Claude runs a command, a code snippet or a file through stash.
 2. stash stores the full output in a local SQLite search index and returns a short preview.
 3. Claude searches that output and gets back only the matching parts.
 
@@ -36,8 +35,8 @@ Done. Claude sees six new `stash_*` tools.
 |---|---|
 | `stash_run` | Runs shell commands, stores the output, returns previews and search hits |
 | `stash_code` | Runs a TypeScript, JavaScript, Python or shell snippet; returns only what it prints |
-| `stash_index` | Stores a file or a web page |
-| `stash_search` | Finds passages in anything stored (BM25, reranked by Jev) |
+| `stash_index` | Stores a file or a piece of text |
+| `stash_search` | Finds passages in anything stored (SQLite full-text search, BM25 ranking) |
 | `stash_get` | Returns one stored chunk or source in full, page by page |
 | `stash_stats` | Bytes stored vs bytes returned |
 
@@ -55,7 +54,7 @@ Done. Claude sees six new `stash_*` tools.
 
 - Each project gets its own index, keyed by the folder Claude Code runs in.
 - Sources older than 7 days are pruned.
-- Nothing leaves your machine except Jev reranking, and only when `TYPESAFE_API_KEY` is set.
+- Nothing leaves your machine: no API keys, no network calls.
 
 ## Remove it
 

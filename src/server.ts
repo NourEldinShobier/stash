@@ -1,6 +1,6 @@
 /**
- * stash: an MCP server (stdio, newline-delimited JSON-RPC 2.0) that keeps big command outputs, files and
- * web pages out of the agent's context. Stdout carries protocol messages only; logs go to stderr.
+ * stash: an MCP server (stdio, newline-delimited JSON-RPC 2.0) that keeps big command outputs, files
+ * out of the agent's context. Stdout carries protocol messages only; logs go to stderr.
  */
 import { Store, bytes } from './store';
 import { tools } from './tools';
@@ -10,7 +10,7 @@ interface Message { jsonrpc?: string; id?: Id; method?: string; params?: Record<
 
 const INSTRUCTIONS =
   'stash keeps large outputs out of your context. Use stash_run instead of Bash for commands that may print a lot, ' +
-  'stash_index for files or web pages you only need parts of, stash_search to pull the passages you need, and ' +
+  'stash_index for files you only need parts of, stash_search to pull the passages you need, and ' +
   'stash_get to read any stored chunk or source in full. stash_code runs a snippet and returns only what it prints.';
 
 const send = (msg: unknown) => process.stdout.write(JSON.stringify(msg) + '\n');

@@ -1,9 +1,9 @@
 {
   "name": "stash",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "license": "MIT",
-  "description": "MCP server that keeps big command output, files and web pages in a local SQLite search index and returns only what Claude asks for, ranked by Jev.",
+  "description": "MCP server that keeps big command output and files in a local SQLite search index and returns only what Claude asks for.",
   "devDependencies": { "@types/bun": "latest" },
   "scripts": { "test": "bun test", "typecheck": "tsc --noEmit" }
 }

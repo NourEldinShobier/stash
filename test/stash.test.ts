@@ -63,7 +63,6 @@ describe('search', () => {
   });
 
   test('a reply that shows only some matches says how many there are', async () => {
-    delete process.env.TYPESAFE_API_KEY; // BM25 order, offline
     const { tools } = await import('../src/tools');
     const s = newStore();
     s.add('errors', 'text', Array.from({ length: 400 }, (_, i) => `error E${i}: request ${i} failed with status 500`).join('\n'), false);
@@ -132,7 +131,7 @@ describe('server protocol', () => {
       stdin: 'pipe',
       stdout: 'pipe',
       stderr: 'inherit',
-      env: { ...process.env, STASH_DIR: tempDir(), TYPESAFE_API_KEY: '' },
+      env: { ...process.env, STASH_DIR: tempDir() },
     });
     const reader = proc.stdout.getReader();
     const decoder = new TextDecoder();
